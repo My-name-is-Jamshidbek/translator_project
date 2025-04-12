@@ -4,10 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tarjimon</title>
-  <!-- Bootstrap CSS (mobilga moslashuvchan) -->
+  <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <style>
-    /* Ekranni ikki qismga bo'lish */
     .split {
       min-height: 100vh;
       padding: 15px;
@@ -31,7 +30,9 @@
     .suggestions li:hover {
       background-color: #f0f0f0;
     }
-    /* Mobil versiyada bo'shliqni optimal taqsimlash */
+    .speech-btn {
+      margin-top: 10px;
+    }
     @media (max-width: 767px) {
       .split {
         min-height: auto;
@@ -39,15 +40,12 @@
         border-bottom: 1px solid #ddd;
       }
     }
-    .speech-btn {
-      margin-top: 10px;
-    }
   </style>
 </head>
 <body>
 <div class="container-fluid">
   <div class="row">
-    <!-- Chap qism: Kiritish va Takliflar -->
+    <!-- Chap qism: kiritish, yo'nalish, takliflar -->
     <div class="col-md-6 split left-column">
       <h2>Kiritish</h2>
       <div class="form-group">
@@ -61,19 +59,23 @@
           <option value="kh_to_uz">Xorazm → O'zbek</option>
         </select>
       </div>
+      <button id="speakInput" type="button" class="btn btn-info speech-btn">Kiritilgan matnni tinglash</button>
       <h4 class="mt-4">Takliflar:</h4>
       <ul class="suggestions" id="suggestionsList">
-        <!-- Dinamik takliflar shu yerda paydo bo'ladi -->
+        <!-- Dinamik takliflar backenddan yuklanadi -->
       </ul>
     </div>
-    <!-- O'ng qism: Natija -->
+    <!-- O'ng qism: natija -->
     <div class="col-md-6 split">
       <h2>Natija</h2>
       <div class="card">
         <div class="card-body">
           <p id="translationOutput" style="font-size: 1.5em;">Tarjima shu yerda paydo bo'ladi.</p>
+          <!-- Qo'shimcha tavsif natija ostida ko'rsatiladi -->
+          <p id="descriptionOutput" class="text-muted"></p>
         </div>
       </div>
+      <button id="speakOutput" type="button" class="btn btn-success speech-btn">Natijani tinglash</button>
     </div>
   </div>
 </div>
@@ -81,7 +83,7 @@
 <!-- jQuery va Bootstrap JS -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script>
-  // Backenddan takliflarni olish (Translations jadvalidan dinamik qidiruv)
+  // Backenddan takliflarni olish
   function fetchSuggestions(query, direction) {
     $.ajax({
       url: "{% url 'ajax_suggestions' %}",
@@ -90,7 +92,11 @@
       success: function(response) {
         if(response.suggestions) {
           let suggestionsHtml = response.suggestions.map(function(item) {
-            return `<li data-uz="${item.uz}">${item.uz} / ${item.kh}</li>`;
+            return `
+              <li data-uz="${item.uz}">
+                <strong>${item.uz} / ${item.kh}</strong><br>
+                <small>${item.description}</small>
+              </li>`;
           }).join('');
           $("#suggestionsList").html(suggestionsHtml);
         }
@@ -101,14 +107,14 @@
     });
   }
 
-  // Matn kiritishda dinamik ravishda takliflarni yangilash
+  // Matn kiritilganda dinamik takliflarni yangilash
   $("#inputText").on("input", function () {
     const query = $(this).val();
     const direction = $("#directionSelect").val();
     fetchSuggestions(query, direction);
   });
 
-  // Tarjima yo'nalishi o'zgarganda takliflarni yangilash
+  // Yo'nalish o'zgarganda takliflarni yangilash
   $("#directionSelect").on("change", function () {
     const query = $("#inputText").val();
     const direction = $(this).val();
@@ -121,34 +127,33 @@
     $("#inputText").val(selectedWord).trigger("input");
   });
 
-  // Matnni tovush chiqarish (Text-to-speech) funksiyasi
+  // Text-to-speech funksiyasi
   function speakText(text, lang) {
     if ('speechSynthesis' in window) {
       let utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang;
       window.speechSynthesis.speak(utterance);
     } else {
-      alert("Tarjima ovoz chiqarish brauzeringiz tomonidan qo'llab-quvvatlanmaydi.");
+      alert("Ovoz chiqarish brauzeringiz tomonidan qo'llab-quvvatlanmaydi.");
     }
   }
 
-  // "Kiritilgan matnni tinglash" tugmasi bosilganda
+  // "Kiritilgan matnni tinglash" tugmasi
   $("#speakInput").on("click", function () {
     const text = $("#inputText").val();
     const direction = $("#directionSelect").val();
-    // Kiritish tilini tanlaymiz: agar O'zbek → Xorazm bo'lsa "uz", aks holda "ru-RU" (taxminiy)
     speakText(text, direction === "uz_to_kh" ? "uz" : "ru-RU");
   });
 
-  // "Natijani tinglash" tugmasi bosilganda
+  // "Natijani tinglash" tugmasi
   $("#speakOutput").on("click", function () {
-    const translation = $("#translationOutput").text();
-    const direction = $("#directionSelect").val();
-    // Natija tili: aks holda "ru-RU" yoki "uz"
-    speakText(translation, direction === "uz_to_kh" ? "ru-RU" : "uz");
+    const text = $("#translationOutput").text();
+    const description = $("#descriptionOutput").text();
+    // Natijani va tavsifni birgalikda tinglash
+    speakText(text + ". " + description, $("#directionSelect").val() === "uz_to_kh" ? "ru-RU" : "uz");
   });
 
-  // 500ms kechikish bilan matn tarjimasini AJAX orqali yuborish
+  // 500ms kechikish bilan tarjimani yuborish va natija maydonini yangilash
   let ajaxTimeout;
   $("#inputText").on("input", function() {
     clearTimeout(ajaxTimeout);
@@ -166,22 +171,26 @@
           },
           success: function(response) {
             if(response.translation) {
-              $("#translationOutput").text(response.translation);
+              $("#translationOutput").html("<strong>" + response.translation + "</strong>");
+              $("#descriptionOutput").html(response.description ? response.description : "");
             } else {
               $("#translationOutput").text("Tarjima topilmadi.");
+              $("#descriptionOutput").text("");
             }
           },
           error: function(xhr, status, error) {
             $("#translationOutput").text("Xatolik: " + error);
+            $("#descriptionOutput").text("");
           }
         });
       } else {
         $("#translationOutput").text("Tarjima shu yerda paydo bo'ladi.");
+        $("#descriptionOutput").text("");
       }
     }, 500);
   });
 
-  // Sahifa yuklanganda takliflarni olish (default takliflar)
+  // Sahifa yuklanganda takliflarni olish
   $(document).ready(function(){
     const direction = $("#directionSelect").val();
     fetchSuggestions('', direction);

@@ -3,67 +3,73 @@ from django.http import JsonResponse
 from django.db.models import Q
 from .models import Translation
 
-
 def index(request):
-    """Render the main translator page."""
+    """Bosh sahifani render qiladi."""
     return render(request, "index.html")
-
 
 def ajax_translate(request):
     """
-    Handle AJAX POST requests for translation.
-
-    Expects POST data containing:
-      - 'text': The word or phrase to translate.
-      - 'direction': "uz_to_kh" (Uzbek to Khorezm) or "kh_to_uz" (Khorezm to Uzbek).
-
-    Returns a JSON response with the translation.
+    AJAX POST so'rovlarini qabul qilib, tarjimani qidiradi.
+    Kiritilgan so'z va tarjima yo'nalishiga asoslangan holda qidiruv bajariladi va
+    natija sifatida tarjima so'zi bilan birga tavsif (description) ham qaytariladi.
     """
     if request.method == "POST":
         input_text = request.POST.get("text", "").strip()
         direction = request.POST.get("direction", "uz_to_kh").strip().lower()
 
         if not input_text:
-            return JsonResponse({"error": "No input text provided."}, status=400)
+            return JsonResponse({"error": "Matn kiritilmagan."}, status=400)
 
+        record = None
         if direction == "uz_to_kh":
             qs = Translation.objects.filter(
                 Q(uz_word__iexact=input_text) | Q(uz_word__icontains=input_text)
             )
-            translation = qs.first().kh_word if qs.exists() else "Translation not found"
+            if qs.exists():
+                record = qs.first()
+                translation = record.kh_word
+            else:
+                translation = "Tarjima topilmadi"
         elif direction == "kh_to_uz":
             qs = Translation.objects.filter(
                 Q(kh_word__iexact=input_text) | Q(kh_word__icontains=input_text)
             )
-            translation = qs.first().uz_word if qs.exists() else "Translation not found"
+            if qs.exists():
+                record = qs.first()
+                translation = record.uz_word
+            else:
+                translation = "Tarjima topilmadi"
         else:
-            return JsonResponse({"error": "Invalid translation direction."}, status=400)
+            return JsonResponse({"error": "Noto'g'ri yo'nalish."}, status=400)
 
-        return JsonResponse({"translation": translation})
+        description = record.description if record and record.description else ""
+        return JsonResponse({"translation": translation, "description": description})
     else:
-        return JsonResponse({"error": "Invalid request method."}, status=400)
-
+        return JsonResponse({"error": "So'rov metodi noto'g'ri."}, status=400)
 
 def ajax_suggestions(request):
     """
-    Returns dynamic suggestions from the Translations table.
-
-    Accepts GET parameters:
-      - 'q': The query string.
-      - 'direction': "uz_to_kh" or "kh_to_uz" to determine which field to search.
+    GET so'rovlari orqali dinamik tavsif va so'z takliflarini qaytaradi.
+    Parametr sifatida 'q' (qidiruv so'zi) va 'direction' (tarjima yo'nalishi) qabul qilinadi.
     """
     query = request.GET.get("q", "").strip().lower()
     direction = request.GET.get("direction", "uz_to_kh").strip().lower()
 
-    # If direction is kh_to_uz, search in the kh_word column; otherwise in uz_word.
     if direction == "kh_to_uz":
         suggestions_qs = Translation.objects.filter(kh_word__icontains=query)
     else:
         suggestions_qs = Translation.objects.filter(uz_word__icontains=query)
 
-    # Limit to the first 10 suggestions if query is empty or too many results are returned
+    # Qidiruv bo'sh bo'lsa, dastlabki 10 ta yozuvni qaytaramiz.
     if not query:
         suggestions_qs = suggestions_qs[:10]
 
-    suggestions_list = [{"uz": t.uz_word, "kh": t.kh_word} for t in suggestions_qs]
+    suggestions_list = [
+        {
+            "uz": t.uz_word,
+            "kh": t.kh_word,
+            "description": t.description
+        }
+        for t in suggestions_qs
+    ]
     return JsonResponse({"suggestions": suggestions_list})

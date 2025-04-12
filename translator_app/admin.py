@@ -1,3 +1,9 @@
-from django.contrib import admin
+# translator_app/admin.py
 
-# Register your models here.
+from django.contrib import admin
+from .models import Translation
+
+@admin.register(Translation)
+class TranslationAdmin(admin.ModelAdmin):
+    list_display = ('uz_word', 'kh_word', 'description')
+    search_fields = ('uz_word', 'kh_word', 'description')
