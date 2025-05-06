@@ -23,7 +23,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: rgba(255,255,255,0.7);
+      {#background: rgba(255,255,255,0.7);#}
       padding: 0;
     }
     .form-card {
@@ -63,12 +63,12 @@
       <div class="form-group">
         <label for="directionSelect">Tarjima yo'nalishi:</label>
         <select class="form-control text-center" id="directionSelect" name="direction">
-          <option value="uz_to_kh"{% if direction == "uz_to_kh" %} selected {% endif %}>O'zbek → Xorazm</option>
-          <option value="kh_to_uz"{% if direction == "kh_to_uz" %} selected {% endif %}>Xorazm → O'zbek</option>
+          <option value="uz_to_kh"{% if direction == "uz_to_kh" %} selected {% endif %}>Adabiy shakli → Shevadagi shakli</option>
+          <option value="kh_to_uz"{% if direction == "kh_to_uz" %} selected {% endif %}>Shevadagi shakli → Adabiy shakli</option>
         </select>
       </div>
       <div>
-        <button id="speakInput" type="button" class="btn btn-info speech-btn">Kiritilgan matnni tinglash</button>
+{#        <button id="speakInput" type="button" class="btn btn-info speech-btn">Kiritilgan matnni tinglash</button>#}
         <button type="submit" class="btn btn-success speech-btn">Yuborish</button>
       </div>
     </form>
@@ -81,7 +81,7 @@
             Tarjima shu yerda paydo bo'ladi.
         {% endif %}
       </p>
-      <button id="speakOutput" type="button" class="btn btn-success speech-btn">Natijani tinglash</button>
+{#      <button id="speakOutput" type="button" class="btn btn-success speech-btn">Natijani tinglash</button>#}
     </div>
   </div>
   <!-- jQuery va Bootstrap JS -->
