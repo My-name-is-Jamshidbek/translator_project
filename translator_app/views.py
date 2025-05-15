@@ -19,19 +19,23 @@ def uz_to_kh(word, df=df):
     # Adabiy so'z (B ustuni) bo'yicha qidirish
     result = df[df['B'].str.lower() == word.lower()]
     if not result.empty:
+        res = ""
         for _, row in result.iterrows():
-            return f"{word.lower()} - {row['A'].lower()} - {row['C'].lower()}"
+            res += f"{word.lower()} - {row['A'].lower()} - {row['C']}<br>"
     else:
         return f"{word.lower()} (hozircha bazada mavjud emas)"
+    return res
 
 def kh_to_uz(word, df=df):
     # Sheva so'z (A ustuni) bo'yicha qidirish
     result = df[df['A'].str.lower() == word.lower()]
     if not result.empty:
+        res = ""
         for _, row in result.iterrows():
-            return f"{word.lower()} - {row['B'].lower()} - {row['C'].lower()}"
+            res += f"{word.lower()} - {row['B'].lower()} - {row['C']}<br>"
     else:
         return f"{word.lower()} (hozircha bazada mavjud emas)"
+    return res
 
 def index(request):
     """Bosh sahifani render qiladi."""
