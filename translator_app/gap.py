@@ -71,7 +71,7 @@ def uz_to_kh_sentence(gap):
         else:
             if sheva_qoshimchalar:
                 full_sheva = qolgan + sheva_qoshimchalar
-                natijalar.append(f"{soz} → {full_sheva} (asos topilmadi, faqat qo‘shimchalar o‘zgartirildi)")
+                natijalar.append(f"{soz} → {full_sheva}")
                 shevadagi_gap.append(full_sheva)
             else:
                 natijalar.append(f"{soz} → {soz} (topilmadi)")
